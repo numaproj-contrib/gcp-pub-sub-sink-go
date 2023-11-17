@@ -1,0 +1,1 @@
+# gcp-pub-sub-sink-go
