@@ -1,16 +1,22 @@
 apiVersion: numaflow.numaproj.io/v1alpha1
 kind: Pipeline
 metadata:
-  name: gcp-pubsub-source
+  name: gcp-pubsub-sink
 spec:
   vertices:
     - name: in
-      scale:
-        min: 1
       source:
-        udsource:
+        generator:
+          # How many messages to generate in the duration.
+          rpu: 10
+          duration: 1s
+          # Optional, size of each generated message, defaults to 10.
+          msgSize: 1024
+    - name: gcloud-pubsub-sink
+      sink:
+        udsink:
           container:
-            image: "quay.io/numaio/numaflow-go/gcloud-pubsub-source:latest"
+            image: "quay.io/numaio/numaflow-go/gcloud-pubsub-sink:latest"
             env:
               - name: PROJECT_ID
                 value: "pubsub-test"
@@ -20,14 +26,6 @@ spec:
                 value: "subscription-09098ui1"
               - name: PUBSUB_EMULATOR_HOST
                 value: "gcloud-pubsub.numaflow-system.svc.cluster.local:8681" # For production keep it blank string
-              - name: MAX_EXTENSION_PERIOD  #specifies the maximum period for which the deadline for message acknowledgment may be extended 30s ,30m
-                value: "240s"
-    - name: redis-sink
-      sink:
-        udsink:
-          container:
-            image: "quay.io/numaio/numaflow-sink/redis-e2e-test-sink:v0.5.0"
   edges:
     - from: in
-      to: redis-sink
-
+      to: gcloud-pubsub-sink

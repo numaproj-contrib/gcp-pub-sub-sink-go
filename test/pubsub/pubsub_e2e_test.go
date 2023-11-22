@@ -1,5 +1,3 @@
-//go:build test
-
 /*
 Copyright 2022 The Numaproj Authors.
 
@@ -39,51 +37,54 @@ const (
 	PUB_SUB_PORT    = 8681
 )
 
-type GCPPubSubSourceSuite struct {
+type GCPPubSubSinkSuite struct {
 	fixtures.E2ESuite
 }
 
-func publish(ctx context.Context, client *pubsub.Client, topicID, msg string) error {
-	t := client.Topic(topicID)
-	result := t.Publish(ctx, &pubsub.Message{Data: []byte(msg)})
-	_, err := result.Get(ctx)
-	if err != nil {
-		return fmt.Errorf("pubsub: result.Get: %w", err)
-	}
-	return nil
-}
-
-func sendMessages(ctx context.Context, client *pubsub.Client, topicID string, count int, message string) {
-	for i := 0; i < count; i++ {
-		if err := publish(ctx, client, topicID, message); err != nil {
-			log.Fatalf("Failed to publish: %v", err)
+func isPubSubContainsMessages(ctx context.Context, client *pubsub.Client, msg string) bool {
+	sub := client.Subscription(SUBSCRIPTION_ID)
+	cancelContext, cancel := context.WithCancel(ctx)
+	defer cancel()
+	sendMessage := make(chan struct{})
+	defer close(sendMessage)
+	msgCount := 0
+	go func() {
+		err := sub.Receive(cancelContext, func(ctx context.Context, message *pubsub.Message) {
+			if msgCount > 5 {
+				sendMessage <- struct{}{}
+			}
+			msgCount++
+		})
+		if err != nil {
+			log.Fatalf("error receiving messages %s", err)
 		}
+	}()
+	select {
+	case <-sendMessage:
+		return true
+	case <-ctx.Done():
+		return false
 	}
 }
-
 func ensureTopicAndSubscription(ctx context.Context, client *pubsub.Client, topicID, subID string) error {
 	topic := client.Topic(topicID)
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		return err
-
 	}
 	if !exists {
 		if _, err = client.CreateTopic(ctx, topicID); err != nil {
 			return err
 		}
 	}
-
 	sub := client.Subscription(subID)
 	exists, err = sub.Exists(ctx)
 	if err != nil {
 		return err
-
 	}
 	if !exists {
 		if _, err = client.CreateSubscription(ctx, subID, pubsub.SubscriptionConfig{Topic: topic}); err != nil {
 			return err
-
 		}
 	}
 	return nil
@@ -96,21 +97,7 @@ func createPubSubClient() *pubsub.Client {
 	}
 	return pubsubClient
 }
-func (suite *GCPPubSubSourceSuite) SetupTest() {
-
-	suite.T().Log("e2e Api resources are ready")
-
-	suite.StartPortForward("e2e-api-pod", 8378)
-
-	// Create Redis Resource
-	redisDeleteCmd := fmt.Sprintf("kubectl delete -k ../../config/apps/redis -n %s --ignore-not-found=true", fixtures.Namespace)
-	suite.Given().When().Exec("sh", []string{"-c", redisDeleteCmd}, fixtures.OutputRegexp(""))
-	redisCreateCmd := fmt.Sprintf("kubectl apply -k ../../config/apps/redis -n %s", fixtures.Namespace)
-	suite.Given().When().Exec("sh", []string{"-c", redisCreateCmd}, fixtures.OutputRegexp("service/redis created"))
-
-	suite.T().Log("Redis resources are ready")
-
-	// Create gcloud-pubsub resources.
+func (suite *GCPPubSubSinkSuite) SetupTest() {
 	gcloudPubSubDeleteCmd := fmt.Sprintf("kubectl delete -k ../../config/apps/gcloud-pubsub -n %s --ignore-not-found=true", fixtures.Namespace)
 	suite.Given().When().Exec("sh", []string{"-c", gcloudPubSubDeleteCmd}, fixtures.OutputRegexp(""))
 	gcloudPubSubCreateCmd := fmt.Sprintf("kubectl apply -k ../../config/apps/gcloud-pubsub -n %s", fixtures.Namespace)
@@ -119,30 +106,31 @@ func (suite *GCPPubSubSourceSuite) SetupTest() {
 	suite.Given().When().WaitForStatefulSetReady(gcloudPubSubLabelSelector)
 	suite.T().Log("gcloud-pubsub resources are ready")
 	//delay to make system ready in CI
-	time.Sleep(time.Minute)
+	time.Sleep(2 * time.Minute)
 
 	suite.T().Log("port forwarding gcloud-pubsub service")
 	suite.StartPortForward("gcloud-pubsub-0", PUB_SUB_PORT)
 }
 
-func (suite *GCPPubSubSourceSuite) TestPubSubSource() {
+func (suite *GCPPubSubSinkSuite) TestPubSubSource() {
 	err := os.Setenv("PUBSUB_EMULATOR_HOST", fmt.Sprintf("localhost:%d", PUB_SUB_PORT))
+	var message = "testing"
+
 	assert.Nil(suite.T(), err)
-	var testMessage = "pubsub-go"
-	pubsubclient := createPubSubClient()
-	assert.NotNil(suite.T(), pubsubclient)
-	err = ensureTopicAndSubscription(context.Background(), pubsubclient, TOPIC_ID, SUBSCRIPTION_ID)
+	pubSubClient := createPubSubClient()
+	assert.NotNil(suite.T(), pubSubClient)
+	err = ensureTopicAndSubscription(context.Background(), pubSubClient, TOPIC_ID, SUBSCRIPTION_ID)
 	assert.Nil(suite.T(), err)
 
-	workflow := suite.Given().Pipeline("@testdata/pubsub_source.yaml").When().CreatePipelineAndWait()
+	workflow := suite.Given().Pipeline("@testdata/pubsub_sink.yaml").When().CreatePipelineAndWait()
 	defer workflow.DeletePipelineAndWait()
 	workflow.Expect().VertexPodsRunning()
-
-	sendMessages(context.Background(), pubsubclient, TOPIC_ID, 40, testMessage)
-
-	workflow.Expect().SinkContains("redis-sink", testMessage, fixtures.WithTimeout(2*time.Minute))
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	containMsg := isPubSubContainsMessages(ctx, pubSubClient, message)
+	suite.True(containMsg)
 }
 
 func TestGCPPubSubSourceSuite(t *testing.T) {
-	suite.Run(t, new(GCPPubSubSourceSuite))
+	suite.Run(t, new(GCPPubSubSinkSuite))
 }
