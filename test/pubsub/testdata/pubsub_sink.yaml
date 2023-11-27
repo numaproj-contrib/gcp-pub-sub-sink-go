@@ -5,8 +5,6 @@ metadata:
 spec:
   vertices:
     - name: in
-      scale:
-        min: 1
       source:
         generator:
           # How many messages to generate in the duration.
@@ -14,9 +12,7 @@ spec:
           duration: 1s
           # Optional, size of each generated message, defaults to 10.
           msgSize: 100
-    - name: gcloud-pubsub-sink
-      scale:
-        min: 1
+    - name: out
       sink:
         udsink:
           container:
@@ -32,4 +28,4 @@ spec:
                 value: "gcloud-pubsub.numaflow-system.svc.cluster.local:8681" # For production keep it blank string
   edges:
     - from: in
-      to: gcloud-pubsub-sink
+      to: out

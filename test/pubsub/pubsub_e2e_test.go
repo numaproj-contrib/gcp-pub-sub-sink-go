@@ -100,10 +100,6 @@ func createPubSubClient() *pubsub.Client {
 	return pubsubClient
 }
 func (suite *GCPPubSubSinkSuite) SetupTest() {
-	suite.T().Log("e2e Api resources are ready")
-
-	suite.StartPortForward("e2e-api-pod", 8378)
-
 	gcloudPubSubDeleteCmd := fmt.Sprintf("kubectl delete -k ../../config/apps/gcloud-pubsub -n %s --ignore-not-found=true", fixtures.Namespace)
 	suite.Given().When().Exec("sh", []string{"-c", gcloudPubSubDeleteCmd}, fixtures.OutputRegexp(""))
 	gcloudPubSubCreateCmd := fmt.Sprintf("kubectl apply -k ../../config/apps/gcloud-pubsub -n %s", fixtures.Namespace)
@@ -113,7 +109,6 @@ func (suite *GCPPubSubSinkSuite) SetupTest() {
 	suite.T().Log("gcloud-pubsub resources are ready")
 	//delay to make system ready in CI
 	time.Sleep(2 * time.Minute)
-
 	suite.T().Log("port forwarding gcloud-pubsub service")
 	suite.StartPortForward("gcloud-pubsub-0", PUB_SUB_PORT)
 }
@@ -121,28 +116,20 @@ func (suite *GCPPubSubSinkSuite) SetupTest() {
 func (suite *GCPPubSubSinkSuite) TestPubSubSource() {
 	err := os.Setenv("PUBSUB_EMULATOR_HOST", fmt.Sprintf("localhost:%d", PUB_SUB_PORT))
 	var message = "testing"
-	//pipelineName := "gcp-pubsub-sink"
-
-	//ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	//defer cancel()
 	assert.Nil(suite.T(), err)
 	pubSubClient := createPubSubClient()
 	assert.NotNil(suite.T(), pubSubClient)
 	err = ensureTopicAndSubscription(context.Background(), pubSubClient, TOPIC_ID, SUBSCRIPTION_ID)
 	assert.Nil(suite.T(), err)
-
 	workflow := suite.Given().Pipeline("@testdata/pubsub_sink.yaml").
 		When().
 		CreatePipelineAndWait()
 	workflow.Expect().VertexPodsRunning()
-
-	suite.T().Log("Printing-=--------Sleeping")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
 	containMsg := isPubSubContainsMessages(ctx, pubSubClient, message)
 	suite.True(containMsg)
-	workflow.DeletePipelineAndWait()
+	workflow.DeletePipelineAndWait(3 * time.Minute)
 
 }
 
