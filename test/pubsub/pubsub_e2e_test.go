@@ -60,11 +60,8 @@ func isPubSubContainsMessages(ctx context.Context, client *pubsub.Client, msg st
 	}()
 	select {
 	case <-sendMessage:
-		log.Println("returning true")
-
 		return true
 	case <-ctx.Done():
-		log.Println("Context has bee n done")
 		return false
 	}
 }
@@ -130,7 +127,6 @@ func (suite *GCPPubSubSinkSuite) TestPubSubSource() {
 	containMsg := isPubSubContainsMessages(ctx, pubSubClient, message)
 	suite.True(containMsg)
 	workflow.DeletePipelineAndWait(3 * time.Minute)
-
 }
 
 func TestGCPPubSubSourceSuite(t *testing.T) {

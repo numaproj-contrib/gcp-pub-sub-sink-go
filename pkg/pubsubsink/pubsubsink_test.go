@@ -84,9 +84,8 @@ func TestMain(m *testing.M) {
 			break
 		}
 	}
-
 	if !pubSubRunning {
-		// Start goaws container if not already running
+		// Start pubsub container if not already running
 		opts := dockertest.RunOptions{
 			Repository:   "thekevjames/gcloud-pubsub-emulator",
 			Tag:          "latest",
