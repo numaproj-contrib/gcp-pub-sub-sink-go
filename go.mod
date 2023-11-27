@@ -144,4 +144,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/numaproj-contrib/numaflow-utils-go => github.com/shubhamdixit863/numaflow-utils-go v0.0.0-20231127100641-66873fdf8b69
+replace github.com/numaproj-contrib/numaflow-utils-go => github.com/shubhamdixit863/numaflow-utils-go v0.0.0-20231127131354-8e619f5854bb
