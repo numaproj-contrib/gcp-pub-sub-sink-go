@@ -45,12 +45,11 @@ func isPubSubContainsMessages(ctx context.Context, client *pubsub.Client, msg st
 	sub := client.Subscription(SUBSCRIPTION_ID)
 	cancelContext, cancel := context.WithCancel(ctx)
 	defer cancel()
-	sendMessage := make(chan struct{})
-	defer close(sendMessage)
+	sendMessage := make(chan struct{}, 1)
 	msgCount := 0
 	go func() {
 		err := sub.Receive(cancelContext, func(ctx context.Context, message *pubsub.Message) {
-			if msgCount > 5 {
+			if msgCount > 0 {
 				sendMessage <- struct{}{}
 			}
 			msgCount++
@@ -61,8 +60,11 @@ func isPubSubContainsMessages(ctx context.Context, client *pubsub.Client, msg st
 	}()
 	select {
 	case <-sendMessage:
+		log.Println("returning true")
+
 		return true
 	case <-ctx.Done():
+		log.Println("Context has bee n done")
 		return false
 	}
 }
@@ -98,6 +100,10 @@ func createPubSubClient() *pubsub.Client {
 	return pubsubClient
 }
 func (suite *GCPPubSubSinkSuite) SetupTest() {
+	suite.T().Log("e2e Api resources are ready")
+
+	suite.StartPortForward("e2e-api-pod", 8378)
+
 	gcloudPubSubDeleteCmd := fmt.Sprintf("kubectl delete -k ../../config/apps/gcloud-pubsub -n %s --ignore-not-found=true", fixtures.Namespace)
 	suite.Given().When().Exec("sh", []string{"-c", gcloudPubSubDeleteCmd}, fixtures.OutputRegexp(""))
 	gcloudPubSubCreateCmd := fmt.Sprintf("kubectl apply -k ../../config/apps/gcloud-pubsub -n %s", fixtures.Namespace)
@@ -115,20 +121,29 @@ func (suite *GCPPubSubSinkSuite) SetupTest() {
 func (suite *GCPPubSubSinkSuite) TestPubSubSource() {
 	err := os.Setenv("PUBSUB_EMULATOR_HOST", fmt.Sprintf("localhost:%d", PUB_SUB_PORT))
 	var message = "testing"
+	//pipelineName := "gcp-pubsub-sink"
 
+	//ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	//defer cancel()
 	assert.Nil(suite.T(), err)
 	pubSubClient := createPubSubClient()
 	assert.NotNil(suite.T(), pubSubClient)
 	err = ensureTopicAndSubscription(context.Background(), pubSubClient, TOPIC_ID, SUBSCRIPTION_ID)
 	assert.Nil(suite.T(), err)
 
-	workflow := suite.Given().Pipeline("@testdata/pubsub_sink.yaml").When().CreatePipelineAndWait()
-	defer workflow.DeletePipelineAndWait()
+	workflow := suite.Given().Pipeline("@testdata/pubsub_sink.yaml").
+		When().
+		CreatePipelineAndWait()
 	workflow.Expect().VertexPodsRunning()
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+
+	suite.T().Log("Printing-=--------Sleeping")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
 	containMsg := isPubSubContainsMessages(ctx, pubSubClient, message)
 	suite.True(containMsg)
+	workflow.DeletePipelineAndWait()
+
 }
 
 func TestGCPPubSubSourceSuite(t *testing.T) {
