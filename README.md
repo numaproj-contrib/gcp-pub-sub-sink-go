@@ -48,14 +48,15 @@ spec:
                 value: "your-pubsub-topic-id"
               - name: SUBSCRIPTION_ID
                 value: "your-pubsub-subscription-id"
-              - name: PUBSUB_EMULATOR_HOST
+              - name: PUBSUB_EMULATOR_HOST   # For production keep it blank string
                 value: ""
   edges:
     - from: in
       to: out
 ```
 
-Replace `your-gcp-project-id`, `your-pubsub-topic-id`, and `your-pubsub-subscription-id` with your actual GCP project ID, Pub/Sub topic ID, and subscription ID respectively.
+Replace `your-gcp-project-id`, `your-pubsub-topic-id`, and `your-pubsub-subscription-id` with your actual GCP project ID, Pub/Sub topic ID, and subscription ID respectively.Keep PUBSUB_EMULATOR_HOST as blank so it can connect with gcp host in cloud
+for local tests you can pass the host ip for emulator.
 
 Then apply it to your cluster:
 ```bash

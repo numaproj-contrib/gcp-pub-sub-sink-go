@@ -53,12 +53,13 @@ func (p *PubSubSink) Sink(ctx context.Context, datumStreamCh <-chan sinksdk.Datu
 			})
 			log.Printf("error publishing messages- %s", err)
 			continue
+		} else {
+			responses = append(responses, sinksdk.Response{
+				ID:      id,
+				Success: true,
+				Err:     "",
+			})
 		}
-		responses = append(responses, sinksdk.Response{
-			ID:      id,
-			Success: true,
-			Err:     "",
-		})
 	}
 	return responses
 }

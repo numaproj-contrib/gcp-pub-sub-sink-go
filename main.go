@@ -25,10 +25,10 @@ import (
 	"cloud.google.com/go/pubsub"
 	sinksdk "github.com/numaproj/numaflow-go/pkg/sinker"
 
-	"github.com/shubhamdixit863/gcp-pub-sub-sink-go/pkg/pubsubsink"
+	"github.com/numaproj-contrib/gcp-pub-sub-sink-go/pkg/pubsubsink"
 )
 
-// getTopic checks if the specified topic name  exists and returns it .
+// getTopic checks if the specified topic name exists and returns it.
 func getTopic(ctx context.Context, client *pubsub.Client, topicID string) (*pubsub.Topic, error) {
 	topic := client.Topic(topicID)
 	exists, err := topic.Exists(ctx)

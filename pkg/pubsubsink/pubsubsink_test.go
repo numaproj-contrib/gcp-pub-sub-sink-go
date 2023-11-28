@@ -31,12 +31,12 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/shubhamdixit863/gcp-pub-sub-sink-go/pkg/mocks"
+	"github.com/numaproj-contrib/gcp-pub-sub-sink-go/pkg/mocks"
 )
 
-const TopicID = "pubsub-test"
-const Project = "pubsub-local-test"
-const PUB_SUB_EMULATOR_HOST = "localhost:8681"
+const topicID = "pubsub-test"
+const project = "pubsub-local-test"
+const pub_sub_emulator_host = "localhost:8681"
 
 var (
 	pubsubClient *pubsub.Client
@@ -102,13 +102,13 @@ func TestMain(m *testing.M) {
 			log.Fatalf("could not start resource %s", err)
 		}
 	}
-	err = os.Setenv("PUBSUB_EMULATOR_HOST", PUB_SUB_EMULATOR_HOST)
+	err = os.Setenv("PUBSUB_EMULATOR_HOST", pub_sub_emulator_host)
 	if err != nil {
 		log.Fatalf("error -%s", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	if err := pool.Retry(func() error {
-		pubsubClient, err = pubsub.NewClient(ctx, Project)
+		pubsubClient, err = pubsub.NewClient(ctx, project)
 		if err != nil {
 			log.Fatalf("Failed to create client: %v", err)
 		}
@@ -133,7 +133,7 @@ func TestMain(m *testing.M) {
 func TestPubSubSink_Sink(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	topic, err := getTopic(ctx, pubsubClient, TopicID)
+	topic, err := getTopic(ctx, pubsubClient, topicID)
 	assert.Nil(t, err)
 	pubSubSink := NewPubSubSink(topic)
 	ch := make(chan sinksdk.Datum, 20)

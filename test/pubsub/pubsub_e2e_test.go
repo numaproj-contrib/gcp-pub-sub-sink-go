@@ -31,10 +31,10 @@ import (
 )
 
 const (
-	SUBSCRIPTION_ID = "subscription-09098ui1"
-	PROJECT_ID      = "pubsub-test"
-	TOPIC_ID        = "pubsub-test-topic"
-	PUB_SUB_PORT    = 8681
+	subscription_id = "subscription-09098ui1"
+	project_id      = "pubsub-test"
+	topic_id        = "pubsub-test-topic"
+	pubsub_port     = 8681
 )
 
 type GCPPubSubSinkSuite struct {
@@ -42,7 +42,7 @@ type GCPPubSubSinkSuite struct {
 }
 
 func isPubSubContainsMessages(ctx context.Context, client *pubsub.Client, msg string) bool {
-	sub := client.Subscription(SUBSCRIPTION_ID)
+	sub := client.Subscription(subscription_id)
 	cancelContext, cancel := context.WithCancel(ctx)
 	defer cancel()
 	sendMessage := make(chan struct{}, 1)
@@ -90,7 +90,7 @@ func ensureTopicAndSubscription(ctx context.Context, client *pubsub.Client, topi
 }
 
 func createPubSubClient() *pubsub.Client {
-	pubsubClient, err := pubsub.NewClient(context.Background(), PROJECT_ID)
+	pubsubClient, err := pubsub.NewClient(context.Background(), project_id)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
@@ -107,16 +107,16 @@ func (suite *GCPPubSubSinkSuite) SetupTest() {
 	//delay to make system ready in CI
 	time.Sleep(2 * time.Minute)
 	suite.T().Log("port forwarding gcloud-pubsub service")
-	suite.StartPortForward("gcloud-pubsub-0", PUB_SUB_PORT)
+	suite.StartPortForward("gcloud-pubsub-0", pubsub_port)
 }
 
-func (suite *GCPPubSubSinkSuite) TestPubSubSource() {
-	err := os.Setenv("PUBSUB_EMULATOR_HOST", fmt.Sprintf("localhost:%d", PUB_SUB_PORT))
+func (suite *GCPPubSubSinkSuite) TestPubSubSink() {
+	err := os.Setenv("PUBSUB_EMULATOR_HOST", fmt.Sprintf("localhost:%d", pubsub_port))
 	var message = "testing"
 	assert.Nil(suite.T(), err)
 	pubSubClient := createPubSubClient()
 	assert.NotNil(suite.T(), pubSubClient)
-	err = ensureTopicAndSubscription(context.Background(), pubSubClient, TOPIC_ID, SUBSCRIPTION_ID)
+	err = ensureTopicAndSubscription(context.Background(), pubSubClient, topic_id, subscription_id)
 	assert.Nil(suite.T(), err)
 	workflow := suite.Given().Pipeline("@testdata/pubsub_sink.yaml").
 		When().

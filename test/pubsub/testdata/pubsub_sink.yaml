@@ -25,7 +25,7 @@ spec:
               - name: SUBSCRIPTION_ID
                 value: "subscription-09098ui1"
               - name: PUBSUB_EMULATOR_HOST
-                value: "gcloud-pubsub.numaflow-system.svc.cluster.local:8681" # For production keep it blank string
+                value: "gcloud-pubsub.numaflow-system.svc.cluster.local:8681"
   edges:
     - from: in
       to: out

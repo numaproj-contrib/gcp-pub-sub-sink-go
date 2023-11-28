@@ -1,11 +1,11 @@
-module github.com/shubhamdixit863/gcp-pub-sub-sink-go
+module github.com/numaproj-contrib/gcp-pub-sub-sink-go
 
 go 1.21.3
 
 require (
 	cloud.google.com/go/pubsub v1.33.0
 	github.com/google/uuid v1.4.0
-	github.com/numaproj-contrib/numaflow-utils-go v0.0.4
+	github.com/numaproj-contrib/numaflow-utils-go v0.0.5
 	github.com/numaproj/numaflow-go v0.5.2
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/stretchr/testify v1.8.4
@@ -143,5 +143,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-replace github.com/numaproj-contrib/numaflow-utils-go => github.com/shubhamdixit863/numaflow-utils-go v0.0.0-20231127131354-8e619f5854bb
