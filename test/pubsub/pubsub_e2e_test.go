@@ -105,7 +105,7 @@ func (suite *GCPPubSubSinkSuite) SetupTest() {
 	suite.Given().When().WaitForStatefulSetReady(gcloudPubSubLabelSelector)
 	suite.T().Log("gcloud-pubsub resources are ready")
 	//delay to make system ready in CI
-	time.Sleep(2 * time.Minute)
+	suite.Given().When().WaitForPodReady("gcloud-pubsub-0", gcloudPubSubLabelSelector)
 	suite.T().Log("port forwarding gcloud-pubsub service")
 	suite.StartPortForward("gcloud-pubsub-0", pubsub_port)
 }

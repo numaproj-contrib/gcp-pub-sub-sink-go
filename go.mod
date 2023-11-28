@@ -143,3 +143,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/numaproj-contrib/numaflow-utils-go v0.0.5 => github.com/shubhamdixit863/numaflow-utils-go v0.0.0-20231128044743-b10d0b6433ed
