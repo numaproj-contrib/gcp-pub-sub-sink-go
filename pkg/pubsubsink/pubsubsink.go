@@ -21,7 +21,6 @@ import (
 	"context"
 	"log"
 
-	"cloud.google.com/go/pubsub"
 	sinksdk "github.com/numaproj/numaflow-go/pkg/sinker"
 )
 

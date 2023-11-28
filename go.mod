@@ -5,7 +5,7 @@ go 1.21.3
 require (
 	cloud.google.com/go/pubsub v1.33.0
 	github.com/google/uuid v1.4.0
-	github.com/numaproj-contrib/numaflow-utils-go v0.0.5
+	github.com/numaproj-contrib/numaflow-utils-go v0.0.7
 	github.com/numaproj/numaflow-go v0.5.2
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/stretchr/testify v1.8.4
@@ -143,5 +143,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-replace github.com/numaproj-contrib/numaflow-utils-go v0.0.5 => github.com/shubhamdixit863/numaflow-utils-go v0.0.0-20231128044743-b10d0b6433ed
